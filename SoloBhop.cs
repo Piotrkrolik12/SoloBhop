@@ -14,26 +14,26 @@ public class SoloBhop : BasePlugin
 
     public override void Load(bool hotReload)
     {
-        RegisterListener<Listeners.OnTick>(OnTick);
+        // Rejestrujemy nasłuchiwanie komend ruchu gracza
+        RegisterListener<Listeners.OnUserCmd>(OnUserCmd);
     }
 
-    private void OnTick()
+    private void OnUserCmd(CCSPlayerController player, CommandInfo cmd)
     {
-        foreach (var player in Utilities.GetPlayers())
+        if (player == null || !player.IsValid || player.IsBot || player.SteamID != MojeSteamID)
+            return;
+
+        var pawn = player.PlayerPawn.Value;
+        if (pawn == null || !pawn.IsValid)
+            return;
+
+        // Sprawdzamy czy gracz trzyma przycisk skoku
+        if ((cmd.Buttons & PlayerButtons.Jump) != 0)
         {
-            if (player == null || !player.IsValid || player.IsBot || player.SteamID != MojeSteamID)
-                continue;
-
-            var pawn = player.PlayerPawn.Value;
-            if (pawn == null || !pawn.IsValid) 
-                continue;
-
-            if ((player.Buttons & PlayerButtons.Jump) != 0)
+            // Jeśli nie stoi na ziemi, usuwamy flagę skoku z tej klatki (symulacja puszczenia spacji)
+            if ((pawn.Flags & (uint)PlayerFlags.FL_ONGROUND) == 0)
             {
-                if ((pawn.Flags & (uint)PlayerFlags.FL_ONGROUND) == 0)
-                {
-                    player.Buttons &= ~PlayerButtons.Jump;
-                }
+                cmd.Buttons &= ~PlayerButtons.Jump;
             }
         }
     }
